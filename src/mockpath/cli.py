@@ -113,6 +113,7 @@ class MockHandler(BaseHTTPRequestHandler):
 
         route = routes.get((method, path))
         if not route:
+            self._drain()
             status = 405 if path_exists else 404
             payload = json.dumps({"error": "Method Not Allowed" if status == 405 else "Not Found"}).encode()
             self.send_response(status)
@@ -127,6 +128,7 @@ class MockHandler(BaseHTTPRequestHandler):
         for m in route.matches:
             if m.params is not None:
                 if all(query_flat.get(k) == v for k, v in m.params.items()):
+                    self._drain()
                     self._send(m.status, m.response)
                     return
             elif m.request_body is not None:
@@ -137,7 +139,14 @@ class MockHandler(BaseHTTPRequestHandler):
                     self._send(m.status, m.response)
                     return
 
+        if not body_read:
+            self._drain()
         self._send(route.status, route.default_response)
+
+    def _drain(self):
+        length = int(self.headers.get("Content-Length", 0))
+        if length > 0:
+            self.rfile.read(length)
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
