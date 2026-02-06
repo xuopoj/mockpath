@@ -1,4 +1,6 @@
-# serve-lhf
+# mockpath
+
+[![PyPI](https://img.shields.io/pypi/v/mockpath)](https://pypi.org/project/mockpath/)
 
 轻量级 HTTP Mock 服务器。通过 YAML 配置 + JSON 文件定义模拟接口，目录结构即 URL 路径。
 
@@ -8,20 +10,26 @@
 - YAML 定义接口配置，JSON 定义请求/响应体
 - 支持 query 参数匹配（子集匹配，请求中的额外参数不影响匹配）
 - 支持请求体匹配（深度相等比较）
-- 支持内联响应、文件引用响应、约定命名响应三种方式
+- 请求体和响应体均支持内联、文件引用、约定命名三种方式
 - `--reload` 模式自动监听文件变更并热重载
 - 未知路径返回 404，方法不匹配返回 405
 
 ## 安装
 
 ```bash
-uv sync
+pip install mockpath
+```
+
+或使用 uv：
+
+```bash
+uv tool install mockpath
 ```
 
 ## 使用
 
 ```bash
-uv run python main.py [-p PORT] [-d DIR] [--reload]
+mockpath [-p PORT] [-d DIR] [--reload]
 ```
 
 | 参数 | 说明 | 默认值 |
@@ -29,6 +37,8 @@ uv run python main.py [-p PORT] [-d DIR] [--reload]
 | `-p, --port` | 监听端口 | 8000 |
 | `-d, --dir` | 配置目录 | `./api` |
 | `--reload` | 监听文件变更，自动重载配置 | 关闭 |
+| `--version` | 显示版本号 | |
+| `--help` | 显示帮助信息 | |
 
 ## 文件命名规则
 
@@ -118,7 +128,7 @@ matches:
 
 ```bash
 # 启动服务器
-uv run python main.py -p 3000
+mockpath -p 3000
 
 # Query 参数匹配
 curl "http://localhost:3000/v1/users/list?page=1"
@@ -142,3 +152,4 @@ curl "http://localhost:3000/v1/users/list"
 
 - Python >= 3.10
 - [PyYAML](https://pyyaml.org/)
+- [Click](https://click.palletsprojects.com/) >= 8.0

@@ -1,4 +1,3 @@
-import argparse
 import json
 import threading
 import time
@@ -7,6 +6,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
+import click
 import yaml
 
 
@@ -105,10 +105,8 @@ class MockHandler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         method = self.command.upper()
         query = parse_qs(parsed.query)
-        # Flatten single-value params
         query_flat = {k: v[0] if len(v) == 1 else v for k, v in query.items()}
 
-        # Check if any route exists for this path (any method)
         path_exists = any(p == path for (_, p) in routes)
 
         route = routes.get((method, path))
@@ -120,7 +118,6 @@ class MockHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": "Method Not Allowed" if status == 405 else "Not Found"}).encode())
             return
 
-        # Try matches (read body once, lazily)
         body = None
         body_read = False
         for m in route.matches:
@@ -155,14 +152,12 @@ class MockHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(body).encode())
 
     def log_message(self, format, *args):
-        print(f"  {self.command} {self.path} → {args[1] if len(args) > 1 else '?'}")
+        click.echo(f"  {self.command} {self.path} → {args[1] if len(args) > 1 else '?'}")
 
     do_GET = do_POST = do_PUT = do_PATCH = do_DELETE = handle_request
 
 
 def watch_reload(spec_dir: Path):
-    mtimes: dict[str, float] = {}
-
     def snapshot():
         result = {}
         for p in spec_dir.rglob("*"):
@@ -178,43 +173,36 @@ def watch_reload(spec_dir: Path):
             mtimes = current
             global routes
             routes = load_specs(spec_dir)
-            print("  [reload] Specs reloaded")
+            click.echo("  [reload] Specs reloaded")
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Lightweight HTTP mock server")
-    parser.add_argument("-p", "--port", type=int, default=8000)
-    parser.add_argument("-d", "--dir", type=str, default="./api")
-    parser.add_argument("--reload", action="store_true", help="Watch for file changes")
-    args = parser.parse_args()
-
-    spec_dir = Path(args.dir).resolve()
-    if not spec_dir.is_dir():
-        print(f"Error: spec directory '{spec_dir}' not found")
-        raise SystemExit(1)
+@click.command()
+@click.option("-p", "--port", default=8000, type=int, help="Port to listen on.")
+@click.option("-d", "--dir", "spec_dir", default="./api", type=click.Path(exists=True, file_okay=False), help="Spec directory.")
+@click.option("--reload", is_flag=True, help="Watch for file changes and auto-reload.")
+@click.version_option(package_name="mockpath")
+def main(port: int, spec_dir: str, reload: bool):
+    """Lightweight HTTP mock server — directory structure as URL paths."""
+    spec_path = Path(spec_dir).resolve()
 
     global routes
-    routes = load_specs(spec_dir)
+    routes = load_specs(spec_path)
 
-    print(f"serve-lhf listening on http://localhost:{args.port}")
-    print(f"  spec dir: {spec_dir}")
-    print(f"  routes loaded: {len(routes)}")
+    click.echo(f"mockpath listening on http://localhost:{port}")
+    click.echo(f"  spec dir: {spec_path}")
+    click.echo(f"  routes loaded: {len(routes)}")
     for (method, path) in sorted(routes):
         r = routes[(method, path)]
         match_info = f" ({len(r.matches)} matches)" if r.matches else ""
-        print(f"    {method:6s} {path}{match_info}")
+        click.echo(f"    {method:6s} {path}{match_info}")
 
-    if args.reload:
-        threading.Thread(target=watch_reload, args=(spec_dir,), daemon=True).start()
-        print("  watching for changes...")
+    if reload:
+        threading.Thread(target=watch_reload, args=(spec_path,), daemon=True).start()
+        click.echo("  watching for changes...")
 
-    server = HTTPServer(("", args.port), MockHandler)
+    server = HTTPServer(("", port), MockHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down.")
+        click.echo("\nShutting down.")
         server.shutdown()
-
-
-if __name__ == "__main__":
-    main()
