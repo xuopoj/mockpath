@@ -19,7 +19,7 @@ classifiers = [
 mockpath = "mockpath.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/seanpm2001/mockpath"
+Homepage = "https://github.com/xuopoj/mockpath"
 
 [build-system]
 requires = ["hatchling"]
