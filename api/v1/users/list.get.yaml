@@ -1,0 +1,9 @@
+status: 200
+matches:
+  - params:
+      page: "1"
+  - params:
+      page: "2"
+    response:
+      users: []
+      total: 0

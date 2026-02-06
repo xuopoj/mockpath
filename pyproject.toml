@@ -1,0 +1,10 @@
+[project]
+name = "serve-lhf"
+version = "0.1.0"
+description = "Lightweight HTTP mock server with YAML config and JSON payloads"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pyyaml"]
+
+[project.scripts]
+serve-lhf = "main:main"
