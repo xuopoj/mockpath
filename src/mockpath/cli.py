@@ -100,6 +100,8 @@ routes: dict[tuple[str, str], RouteEntry] = {}
 
 
 class MockHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def handle_request(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
@@ -112,10 +114,12 @@ class MockHandler(BaseHTTPRequestHandler):
         route = routes.get((method, path))
         if not route:
             status = 405 if path_exists else 404
+            payload = json.dumps({"error": "Method Not Allowed" if status == 405 else "Not Found"}).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
-            self.wfile.write(json.dumps({"error": "Method Not Allowed" if status == 405 else "Not Found"}).encode())
+            self.wfile.write(payload)
             return
 
         body = None
@@ -145,11 +149,13 @@ class MockHandler(BaseHTTPRequestHandler):
             return None
 
     def _send(self, status: int, body: object):
+        payload = json.dumps(body).encode() if body is not None else b""
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
-        if body is not None:
-            self.wfile.write(json.dumps(body).encode())
+        if payload:
+            self.wfile.write(payload)
 
     def log_message(self, format, *args):
         click.echo(f"  {self.command} {self.path} → {args[1] if len(args) > 1 else '?'}")

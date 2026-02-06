@@ -1,6 +1,6 @@
 [project]
 name = "mockpath"
-version = "0.1.0"
+version = "0.1.1"
 description = "Lightweight HTTP mock server — directory structure as URL paths"
 readme = "README.md"
 requires-python = ">=3.10"
