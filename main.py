@@ -66,12 +66,19 @@ def load_specs(spec_dir: Path) -> dict[tuple[str, str], RouteEntry]:
                     with open(conv_file) as f:
                         match_response = json.load(f)
 
-            # Resolve request body match
+            # Resolve request body: inline > request_file > convention
             req_body = None
-            req_file = yaml_path.with_name(f"{name}.{parts[1]}.req.{i}.json")
-            if req_file.exists():
-                with open(req_file) as f:
+            if "request" in m:
+                req_body = m["request"]
+            elif "request_file" in m:
+                rf = yaml_path.parent / m["request_file"]
+                with open(rf) as f:
                     req_body = json.load(f)
+            else:
+                req_file = yaml_path.with_name(f"{name}.{parts[1]}.req.{i}.json")
+                if req_file.exists():
+                    with open(req_file) as f:
+                        req_body = json.load(f)
 
             matches.append(MatchEntry(
                 params=m.get("params"),

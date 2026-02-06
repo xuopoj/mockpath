@@ -1,3 +1,5 @@
 status: 201
 matches:
-  - status: 200
+  - request:
+      name: "Bob"
+    response_file: profile.post.resp.1.json

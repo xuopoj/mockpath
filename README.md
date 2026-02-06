@@ -82,9 +82,23 @@ matches:
 # profile.post.yaml
 status: 201
 matches:
-  - status: 200             # 匹配 #1，请求体来自 profile.post.req.1.json
-  - status: 202             # 匹配 #2，请求体来自 profile.post.req.2.json
+  - request:                 # 内联请求体
+      name: "Bob"
+    response_file: resp.1.json
+  - request_file: req.2.json # 引用外部请求体文件
+    response:
+      id: 4
+      name: "Alice"
+  - status: 200              # 约定命名：请求体来自 profile.post.req.3.json
 ```
+
+### 请求体的三种指定方式
+
+每条匹配规则的请求体按以下优先级确定：
+
+1. **`request`** — YAML 中的内联 JSON 请求体
+2. **`request_file`** — 引用外部文件（相对于 YAML 文件的路径）
+3. **约定命名** — 自动查找 `<端点名>.<方法>.req.N.json`
 
 ### 响应的三种指定方式
 
